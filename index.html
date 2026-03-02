@@ -180,62 +180,94 @@ h1 .name{color:#fff;text-shadow:0 0 20px rgba(78,205,196,.9);}
   }
 })();
 
-// ── ElevenLabs Voice ──
-const XI_KEY   = 'sk_c6f1cac3fee162140ff062cea2db07d421385f224a516d52';
-const VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // Rachel
-const MODEL_ID = 'eleven_multilingual_v2';
+// ── ElevenLabs Voice (same pattern as working games) ──
+const EL_KEY   = 'sk_c6f1cac3fee162140ff062cea2db07d421385f224a516d52';
+const EL_VOICE = 'XB0fDUnXU5powFXDhCwa'; // Charlotte — warm, works great for Hebrew
+const EL_MODEL = 'eleven_turbo_v2_5';     // turbo = fast + high quality
+
+let audioCache   = {};
+let currentAudio = null;
+let lastText     = '';
+let voiceEnabled = false;
 
 const V = {
-  intro:    'שלום עומר! ברוך הבא למשחק הרקטה!',
-  correct:  ['כל הכבוד עומר!','מדהים!','נכון מאוד!','סופר עומר!','אתה גאון!','יופי!'],
-  wrong:    ['לא נכון, נסה שוב!','טעות קטנה, אתה יכול!','עוד פעם עומר!'],
-  launch:   'שיגור מוצלח! עומר אתה אלוף!',
-  gameover: 'אוי עומר, נגמר הדלק! נסה שוב!',
+  intro:    'שלום עומר! ברוך הבא למשחק הרקטה! פתור תרגילים, מלא את הדלק, ושגר את הרקטה!',
+  correct:  ['כל הכבוד עומר!','מדהים!','נכון מאוד!','סופר עומר!','אתה גאון!','יופי של תשובה!'],
+  wrong:    ['לא נכון, נסה שוב עומר!','טעות קטנה, אתה יכול!','עוד פעם עומר!'],
+  launch:   'שיגור מוצלח! עומר אתה אלוף אמיתי!',
+  gameover: 'אוי עומר, נגמר הדלק! אבל אתה יכול לנסות שוב!',
   streak3:  'שלוש ברצף! עומר אתה בוער!',
-  streak5:  'חמש ברצף! אתה מדהים!'
+  streak5:  'חמש ברצף! עומר אתה פשוט מדהים!'
 };
 
-const cache   = {};
-let speaking  = false;
-let pendingText = null; // only keep the latest request
-
-// ── speak() just stores the text; actual play triggered by user gesture ──
-function speak(text) {
-  pendingText = text;
-  tryPlay();
+// Phonetic fixes so the voice pronounces Hebrew names naturally
+function phonetic(text) {
+  return text
+    .replace(/עומר/g, 'Oh-mer')
+    .replace(/כל הכבוד/g, 'kol ha-ka-vod')
+    .replace(/מדהים/g, 'mad-him')
+    .replace(/גאון/g, 'ga-on')
+    .replace(/שיגור/g, 'shi-gur')
+    .replace(/מוצלח/g, 'muts-lach')
+    .replace(/אלוף/g, 'a-luf')
+    .replace(/נגמר/g, 'nig-mar')
+    .replace(/הדלק/g, 'ha-de-lek')
+    .replace(/ברצף/g, 'ba-re-tsef')
+    .replace(/בוער/g, 'bo-er');
 }
-function speakRandom(arr) { speak(arr[Math.floor(Math.random()*arr.length)]); }
 
-async function tryPlay() {
-  if (speaking || !pendingText) return;
-  speaking = true;
-  const text = pendingText;
-  pendingText = null;
+async function speak(text, onDone) {
+  if (!voiceEnabled || !text) return;
+  lastText = text;
+  const phrase = phonetic(text);
+
+  // Stop anything currently playing
+  if (currentAudio) { try { currentAudio.pause(); currentAudio.currentTime = 0; } catch(e){} }
+
+  // Serve from cache
+  if (audioCache[phrase]) { playBlob(audioCache[phrase], onDone); return; }
+
   try {
-    let url = cache[text];
-    if (!url) {
-      const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + VOICE_ID, {
-        method: 'POST',
-        headers: { 'xi-api-key': XI_KEY, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
-        body: JSON.stringify({ text, model_id: MODEL_ID,
-          voice_settings: { stability: 0.45, similarity_boost: 0.85, style: 0.2, use_speaker_boost: true }
-        })
-      });
-      if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + await res.text());
-      const buf = await res.arrayBuffer();
-      url = URL.createObjectURL(new Blob([buf], { type: 'audio/mpeg' }));
-      cache[text] = url;
-    }
-    const audio = new Audio(url);
-    audio.onended = () => { speaking = false; if (pendingText) tryPlay(); };
-    audio.onerror = (e) => { console.warn('Audio error', e); speaking = false; if (pendingText) tryPlay(); };
-    await audio.play();
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${EL_VOICE}`, {
+      method: 'POST',
+      headers: { 'xi-api-key': EL_KEY, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
+      body: JSON.stringify({
+        text: phrase,
+        model_id: EL_MODEL,
+        voice_settings: { stability: 0.50, similarity_boost: 0.85, style: 0.35, use_speaker_boost: true }
+      })
+    });
+    if (!res.ok) throw new Error('ElevenLabs ' + res.status);
+    const url = URL.createObjectURL(await res.blob());
+    audioCache[phrase] = url;
+    playBlob(url, onDone);
   } catch(e) {
-    console.warn('Voice error:', e.message);
-    speaking = false;
-    if (pendingText) tryPlay();
+    console.warn('ElevenLabs error, using device voice:', e);
+    fallbackSpeak(text, onDone);
   }
 }
+
+function playBlob(url, onDone) {
+  const audio = new Audio(url);
+  currentAudio = audio;
+  audio.onended = audio.onerror = () => { if (onDone) onDone(); };
+  audio.play().catch(() => { if (onDone) onDone(); });
+}
+
+// Fallback: device Hebrew voice
+function fallbackSpeak(text, onDone) {
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(phonetic(text));
+  u.lang = 'he-IL'; u.rate = 0.88; u.pitch = 1.05;
+  const voices = window.speechSynthesis.getVoices();
+  const heb = voices.find(v => v.name.includes('Asaf')) ||
+              voices.find(v => v.lang === 'he-IL') || null;
+  if (heb) u.voice = heb;
+  u.onend = u.onerror = () => { if (onDone) onDone(); };
+  window.speechSynthesis.speak(u);
+}
+
+function speakRandom(arr) { speak(arr[Math.floor(Math.random()*arr.length)]); }
 
 // ── Game ──
 let score, lives, streak, fuel, currentAnswer, locked, ovAnswer;
@@ -371,12 +403,13 @@ function triggerGameOver(){
 }
 
 function activateSound() {
+  voiceEnabled = true;
   const btn = document.getElementById('sound-btn');
   btn.textContent = '🔊 קול';
   btn.style.background = 'rgba(78,205,196,0.2)';
   btn.style.borderColor = 'rgba(78,205,196,0.5)';
   btn.style.color = '#4ecdc4';
-  btn.onclick = null; // disable after first click
+  btn.onclick = () => speak(lastText || V.intro); // re-tap replays last phrase
   speak(V.intro);
 }
 
