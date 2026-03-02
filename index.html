@@ -86,6 +86,7 @@ h1 .name{color:#fff;text-shadow:0 0 20px rgba(78,205,196,.9);}
 .go-title{font-family:'Secular One',sans-serif;font-size:clamp(1.8rem,7vw,3.2rem);color:var(--red);text-align:center;}
 .go-score{font-size:1.2rem;color:var(--gold);font-weight:700;}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@elevenlabs/client@latest/dist/index.umd.js"></script>
 </head>
 <body>
 
@@ -180,17 +181,17 @@ h1 .name{color:#fff;text-shadow:0 0 20px rgba(78,205,196,.9);}
   }
 })();
 
-// ── ElevenLabs Voice — exact pattern from working games ──
+// ── ElevenLabs Browser SDK ──
 const EL_KEY   = 'sk_c6f1cac3fee162140ff062cea2db07d421385f224a516d52';
 const EL_VOICE = 'XB0fDUnXU5powFXDhCwa'; // Charlotte
 const EL_MODEL = 'eleven_turbo_v2_5';
 
-let audioCache   = {};
 let currentAudio = null;
 let lastText     = '';
 let voiceEnabled = false;
+let elClient     = null;
 
-// All phrases in English phonetics — ElevenLabs works best with English
+// All phrases in English phonetics
 const V = {
   intro:    "Sha-lom Oh-mer! Welcome to the rocket game! Solve math problems, fill the fuel, and launch the rocket!",
   correct:  ["Kol ha-kavod Oh-mer!", "Mad-him!", "Nach-on me-od!", "Soo-per Oh-mer!", "Ata ga-on!", "Yoh-fi shel tesh-uva!"],
@@ -201,36 +202,51 @@ const V = {
   streak5:  "Cha-mesh ba-re-tsef! Oh-mer, a-ta pash-ut mad-him!"
 };
 
+const audioCache = {};
+
 async function speak(text, onDone) {
   if (!voiceEnabled || !text) return;
   lastText = text;
   if (currentAudio) { try { currentAudio.pause(); currentAudio.currentTime = 0; } catch(e){} }
+
+  // Serve from cache
   if (audioCache[text]) { playBlob(audioCache[text], onDone); return; }
+
   try {
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${EL_VOICE}`, {
-      method: 'POST',
-      headers: { 'xi-api-key': EL_KEY, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
-      body: JSON.stringify({
+    // Use ElevenLabs browser SDK if available, else fall back to fetch
+    let blob;
+    if (window.ElevenLabs) {
+      if (!elClient) elClient = new window.ElevenLabs.ElevenLabsClient({ apiKey: EL_KEY });
+      const res = await elClient.textToSpeech.convert(EL_VOICE, {
         text,
         model_id: EL_MODEL,
         voice_settings: { stability: 0.50, similarity_boost: 0.85, style: 0.35, use_speaker_boost: true }
-      })
-    });
-    if (!res.ok) throw new Error(res.status);
-    const url = URL.createObjectURL(await res.blob());
+      });
+      blob = res;
+    } else {
+      // Fallback: direct fetch (works when CORS is open)
+      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${EL_VOICE}`, {
+        method: 'POST',
+        headers: { 'xi-api-key': EL_KEY, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
+        body: JSON.stringify({ text, model_id: EL_MODEL,
+          voice_settings: { stability: 0.50, similarity_boost: 0.85, style: 0.35, use_speaker_boost: true }
+        })
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      blob = await res.blob();
+    }
+    const url = URL.createObjectURL(blob);
     audioCache[text] = url;
     playBlob(url, onDone);
   } catch(e) {
-    console.warn('ElevenLabs error:', e);
-    const btn = document.getElementById('sound-btn');
-    if (btn) btn.classList.remove('talking');
+    console.warn('Voice error:', e.message);
   }
 }
 
 function playBlob(url, onDone) {
   const a = new Audio(url); currentAudio = a;
   a.onended = a.onerror = () => { if (onDone) onDone(); };
-  a.play().catch(() => { if (onDone) onDone(); });
+  a.play().catch(e => console.warn('Play error:', e));
 }
 
 function speakRandom(arr) { speak(arr[Math.floor(Math.random()*arr.length)]); }
