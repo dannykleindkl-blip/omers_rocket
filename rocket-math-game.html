@@ -428,10 +428,31 @@ for (let i = 0; i < 120; i++) {
   sc.appendChild(s);
 }
 
-// ── Hebrew Voice (Web Speech API + ElevenLabs fallback) ──
-const XI_KEY   = 'sk_50f2d900d79ed5f3305e3693e29f59d1bf912b4d2ea9a7e8';
-const VOICE_ID = 'EXAVITQu4vr4xnSDxMaL';
-const MODEL_ID = 'eleven_multilingual_v2';
+// ── Hebrew Voice (Web Speech API — Chrome native) ──
+// Chrome requires a user gesture before any audio. We unlock on first button click.
+let voiceUnlocked = false;
+let hebrewVoice   = null;
+let voiceReady    = false;
+
+function loadVoices() {
+  const all = window.speechSynthesis.getVoices();
+  hebrewVoice = all.find(v => v.lang === 'he-IL') ||
+                all.find(v => v.lang.startsWith('he')) ||
+                all.find(v => v.name.toLowerCase().includes('hebrew')) ||
+                null;
+  voiceReady = true;
+}
+window.speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+
+function unlockAudio() {
+  if (voiceUnlocked) return;
+  voiceUnlocked = true;
+  // Play a silent utterance to unlock audio context
+  const silent = new SpeechSynthesisUtterance('');
+  silent.volume = 0;
+  window.speechSynthesis.speak(silent);
+}
 
 const V = {
   intro:    'שלום עומר! ברוך הבא למשחק הרקטה! פתור תרגילים, מלא את הדלק, ושגר את הרקטה לחלל!',
@@ -443,84 +464,18 @@ const V = {
   streak5:  'חמש ברצף! עומר, אתה פשוט מדהים!'
 };
 
-// -- ElevenLabs path --
-const audioCache = {};
-let audioQueue = [];
-let isPlaying   = false;
-let useElevenLabs = true; // will flip to false if it fails
-
-async function fetchAudio(text) {
-  if (audioCache[text]) return audioCache[text];
-  try {
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
-      method: 'POST',
-      headers: { 'xi-api-key': XI_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text,
-        model_id: MODEL_ID,
-        voice_settings: { stability: 0.5, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true }
-      })
-    });
-    if (!res.ok) { useElevenLabs = false; return null; }
-    const blob = await res.blob();
-    const url  = URL.createObjectURL(blob);
-    audioCache[text] = url;
-    return url;
-  } catch(e) { useElevenLabs = false; return null; }
-}
-
-// -- Web Speech API fallback --
-let hebrewVoice = null;
-function initVoices() {
-  const voices = window.speechSynthesis.getVoices();
-  hebrewVoice = voices.find(v => v.lang === 'he-IL') ||
-                voices.find(v => v.lang.startsWith('he')) ||
-                voices.find(v => v.name.toLowerCase().includes('hebrew')) ||
-                null;
-}
-window.speechSynthesis.onvoiceschanged = initVoices;
-initVoices();
-
-function speakNative(text) {
+function speak(text) {
+  if (!voiceUnlocked) return;
   window.speechSynthesis.cancel();
   const utt = new SpeechSynthesisUtterance(text);
-  utt.lang = 'he-IL';
-  utt.rate = 0.95;
+  utt.lang  = 'he-IL';
+  utt.rate  = 0.92;
   utt.pitch = 1.1;
   if (hebrewVoice) utt.voice = hebrewVoice;
   window.speechSynthesis.speak(utt);
 }
 
-// -- Unified queue --
-async function playQueue() {
-  if (!audioQueue.length) { isPlaying = false; return; }
-  isPlaying = true;
-  const text = audioQueue.shift();
-  if (useElevenLabs) {
-    const url = await fetchAudio(text);
-    if (url) {
-      const audio = new Audio(url);
-      audio.onended = playQueue;
-      audio.onerror = () => { speakNative(text); playQueue(); };
-      audio.play().catch(() => { speakNative(text); playQueue(); });
-      return;
-    }
-  }
-  speakNative(text);
-  // native speech has no clean "ended" callback for queue, so just wait a beat
-  const dur = Math.max(1200, text.length * 80);
-  setTimeout(playQueue, dur);
-}
-
-function speak(text) {
-  audioQueue.push(text);
-  if (!isPlaying) playQueue();
-}
-
 function speakRandom(arr) { speak(arr[Math.floor(Math.random() * arr.length)]); }
-
-// Warm up ElevenLabs with a silent pre-fetch
-fetchAudio(V.intro);
 
 // ── Game State ──
 let score, lives, streak, fuel, currentAnswer, locked, ovAnswer;
@@ -563,6 +518,7 @@ function setupOvInput(inputId, btnId, fbId, skipId, onCorrect, onSkip) {
   const skip  = document.getElementById(skipId);
 
   function attempt() {
+    unlockAudio();
     const val = parseInt(input.value);
     if (isNaN(val)) return;
     if (val === ovAnswer) {
@@ -570,7 +526,7 @@ function setupOvInput(inputId, btnId, fbId, skipId, onCorrect, onSkip) {
       fb.className = 'feedback-txt good';
       fb.textContent = 'מצוין עומר! 🌟';
       speak('מצוין עומר! בוא נתחיל!');
-      setTimeout(onCorrect, 1200);
+      setTimeout(onCorrect, 1400);
     } else {
       input.classList.add('wrong');
       fb.className = 'feedback-txt bad';
@@ -587,6 +543,7 @@ function setupOvInput(inputId, btnId, fbId, skipId, onCorrect, onSkip) {
 // ── Main check ──
 function checkMain() {
   if (locked) return;
+  unlockAudio();
   const input = document.getElementById('main-input');
   const val = parseInt(input.value);
   if (isNaN(val)) return;
@@ -604,8 +561,7 @@ function checkMain() {
     const r = input.getBoundingClientRect();
     ['⭐','🌟','✨'].forEach((e,i) => setTimeout(() => particle(r.left+Math.random()*60, r.top, e), i*100));
 
-    // Voice feedback
-    if (streak === 3) speak(V.streak3);
+    if      (streak === 3) speak(V.streak3);
     else if (streak === 5) speak(V.streak5);
     else speakRandom(V.correct);
 
@@ -675,13 +631,21 @@ function startGame() {
   document.getElementById('gameover-overlay').classList.remove('show');
   genMain();
   setTimeout(() => mi.focus(), 100);
-  speak(V.intro);
+  // Intro plays after first click — see unlockAudio()
 }
+
+// Unlock + speak intro on very first user interaction anywhere
+document.addEventListener('click', function onFirstClick() {
+  unlockAudio();
+  setTimeout(() => speak(V.intro), 300);
+  document.removeEventListener('click', onFirstClick);
+}, { once: true });
 
 document.getElementById('main-input').addEventListener('keydown', e => { if(e.key==='Enter') checkMain(); });
 document.getElementById('main-btn').addEventListener('click', checkMain);
 
 startGame();
 </script>
+
 </body>
 </html>
