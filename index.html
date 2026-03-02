@@ -97,6 +97,7 @@ h1 .name{color:#fff;text-shadow:0 0 20px rgba(78,205,196,.9);}
     <div class="hud-item"><span>⭐</span><span id="score-display">0</span></div>
     <div class="hud-item"><span>❤️</span><span id="lives-display">3</span></div>
     <div class="hud-item"><span>🔥</span><span id="streak-display">0</span></div>
+    <div class="hud-item"><button id="sound-btn" onclick="activateSound()" style="background:rgba(255,217,61,0.2);border:1px solid rgba(255,217,61,0.5);border-radius:20px;color:#ffd93d;padding:4px 12px;cursor:pointer;font-size:0.9rem;font-family:Rubik,sans-serif;">🔇 קול</button></div>
   </div>
   <div class="fuel-section">
     <div class="fuel-label">⛽ דלק לרקטה של עומר</div>
@@ -194,54 +195,45 @@ const V = {
   streak5:  'חמש ברצף! אתה מדהים!'
 };
 
-const cache = {};
-let   speaking = false;
-let   queue    = [];
-let   audioUnlocked = false;
+const cache   = {};
+let speaking  = false;
+let pendingText = null; // only keep the latest request
 
-// Unlock audio on first user gesture
-function unlockOnce() {
-  if (audioUnlocked) return;
-  audioUnlocked = true;
-  drainQueue();
-}
-document.addEventListener('click',  unlockOnce, true);
-document.addEventListener('keydown', unlockOnce, true);
-
+// ── speak() just stores the text; actual play triggered by user gesture ──
 function speak(text) {
-  // Interrupt: clear queue and stop current
-  queue = [text];
-  if (!speaking) drainQueue();
+  pendingText = text;
+  tryPlay();
 }
 function speakRandom(arr) { speak(arr[Math.floor(Math.random()*arr.length)]); }
 
-async function drainQueue() {
-  if (!audioUnlocked || speaking || queue.length===0) return;
+async function tryPlay() {
+  if (speaking || !pendingText) return;
   speaking = true;
-  const text = queue.shift();
+  const text = pendingText;
+  pendingText = null;
   try {
     let url = cache[text];
     if (!url) {
-      const res = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
-        { method:'POST',
-          headers:{'xi-api-key':XI_KEY,'Content-Type':'application/json'},
-          body: JSON.stringify({text, model_id:MODEL_ID,
-            voice_settings:{stability:0.45,similarity_boost:0.85,style:0.2,use_speaker_boost:true}})
-        }
-      );
-      if (!res.ok) { speaking=false; drainQueue(); return; }
-      const blob = await res.blob();
-      url = URL.createObjectURL(blob);
+      const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + VOICE_ID, {
+        method: 'POST',
+        headers: { 'xi-api-key': XI_KEY, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
+        body: JSON.stringify({ text, model_id: MODEL_ID,
+          voice_settings: { stability: 0.45, similarity_boost: 0.85, style: 0.2, use_speaker_boost: true }
+        })
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + await res.text());
+      const buf = await res.arrayBuffer();
+      url = URL.createObjectURL(new Blob([buf], { type: 'audio/mpeg' }));
       cache[text] = url;
     }
     const audio = new Audio(url);
-    audio.onended = () => { speaking=false; drainQueue(); };
-    audio.onerror = () => { speaking=false; drainQueue(); };
+    audio.onended = () => { speaking = false; if (pendingText) tryPlay(); };
+    audio.onerror = (e) => { console.warn('Audio error', e); speaking = false; if (pendingText) tryPlay(); };
     await audio.play();
   } catch(e) {
+    console.warn('Voice error:', e.message);
     speaking = false;
-    drainQueue();
+    if (pendingText) tryPlay();
   }
 }
 
@@ -378,6 +370,16 @@ function triggerGameOver(){
   setTimeout(()=>inp.focus(),80);
 }
 
+function activateSound() {
+  const btn = document.getElementById('sound-btn');
+  btn.textContent = '🔊 קול';
+  btn.style.background = 'rgba(78,205,196,0.2)';
+  btn.style.borderColor = 'rgba(78,205,196,0.5)';
+  btn.style.color = '#4ecdc4';
+  btn.onclick = null; // disable after first click
+  speak(V.intro);
+}
+
 function startGame(){
   score=0;lives=3;streak=0;locked=false;ovAnswer=null;
   setFuel(8);
@@ -391,8 +393,6 @@ function startGame(){
   document.getElementById('gameover-overlay').classList.remove('show');
   genMain();
   setTimeout(()=>mi.focus(),100);
-  // speak intro only after user gesture
-  setTimeout(()=>speak(V.intro),400);
 }
 
 document.getElementById('main-input').addEventListener('keydown',e=>{if(e.key==='Enter')checkMain();});
