@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>משחק הרקטה של עומר 🚀</title>
+<link href="https://fonts.googleapis.com/css2?family=Secular+One&family=Rubik:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --space: #06060f;
+    --gold: #ffd93d;
+    --orange: #ff6b35;
+    --green: #4ecdc4;
+    --red: #ff4757;
+    --white: #f0f4ff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Rubik', sans-serif;
+    background: var(--space);
+    color: var(--white);
+    min-height: 100vh;
+    overflow: hidden;
+    direction: rtl;
+  }
+
+  .stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle var(--d, 2s) ease-in-out infinite alternate;
+  }
+  @keyframes twinkle { from { opacity: 0.1; } to { opacity: 1; } }
+
+  .game-wrapper {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+    gap: 14px;
+  }
+
+  h1 {
+    font-family: 'Secular One', sans-serif;
+    font-size: clamp(1.5rem, 4.5vw, 2.6rem);
+    color: var(--gold);
+    text-shadow: 0 0 30px rgba(255,217,61,0.5);
+    text-align: center;
+  }
+  h1 .name { color: #fff; text-shadow: 0 0 20px rgba(78,205,196,0.9); }
+
+  .hud {
+    display: flex;
+    gap: 20px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 50px;
+    padding: 10px 24px;
+    backdrop-filter: blur(8px);
+  }
+  .hud-item { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; font-weight: 700; }
+  .hud-item span:first-child { font-size: 1.4rem; }
+
+  .fuel-section { width: min(420px, 90vw); text-align: center; }
+  .fuel-label { font-size: 0.85rem; color: var(--gold); margin-bottom: 6px; }
+  .fuel-bar-bg {
+    background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 50px;
+    height: 24px;
+    overflow: hidden;
+  }
+  .fuel-bar {
+    height: 100%;
+    border-radius: 50px;
+    background: linear-gradient(90deg, #4ecdc4, #ffd93d, #ff6b35);
+    transition: width 0.5s cubic-bezier(.34,1.56,.64,1);
+    position: relative;
+  }
+  .fuel-bar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 60%);
+    border-radius: 50px;
+  }
+
+  .scene {
+    position: relative;
+    width: min(420px, 90vw);
+    height: 160px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .rocket-wrap {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .rocket-wrap.boost { animation: boost 0.4s ease; }
+  @keyframes boost {
+    0%  { filter: drop-shadow(0 0 0px #ffd93d); }
+    50% { filter: drop-shadow(0 0 30px #ff6b35); }
+    100%{ filter: drop-shadow(0 0 10px #ffd93d); }
+  }
+  .rocket-svg { width: 65px; }
+  .flame {
+    width: 28px; height: 40px; margin-top: -4px;
+    border-radius: 50% 50% 60% 60%;
+    background: linear-gradient(to bottom, #fff 0%, #ffd93d 30%, #ff6b35 70%, transparent 100%);
+    animation: flicker 0.15s ease-in-out infinite alternate;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .flame.active { opacity: 1; }
+  @keyframes flicker {
+    from { transform: scaleX(0.85) scaleY(0.95); }
+    to   { transform: scaleX(1.15) scaleY(1.05); }
+  }
+  .launchpad {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px; height: 18px;
+    background: linear-gradient(180deg, #555, #333);
+    border-radius: 6px 6px 0 0;
+    border: 1px solid #666;
+  }
+  .launchpad::before, .launchpad::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    width: 14px; height: 26px;
+    background: #444;
+    border-radius: 4px 4px 0 0;
+  }
+  .launchpad::before { left: 12px; }
+  .launchpad::after  { right: 12px; }
+  .ground {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, rgba(78,205,196,0.6), transparent);
+  }
+
+  /* Question card */
+  .question-card {
+    background: linear-gradient(135deg, rgba(42,26,110,0.8), rgba(13,13,43,0.9));
+    border: 2px solid rgba(255,217,61,0.3);
+    border-radius: 24px;
+    padding: 22px 30px;
+    text-align: center;
+    width: min(420px, 90vw);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  }
+  .question-text {
+    font-size: clamp(1.8rem, 6vw, 2.8rem);
+    font-weight: 900;
+    color: var(--white);
+    margin-bottom: 14px;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    direction: ltr;
+    unicode-bidi: bidi-override;
+  }
+
+  /* Shared input/btn styles */
+  .ans-input {
+    width: 140px;
+    padding: 11px 14px;
+    font-size: 1.7rem;
+    font-family: 'Rubik', sans-serif;
+    font-weight: 700;
+    text-align: center;
+    background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,217,61,0.4);
+    border-radius: 14px;
+    color: var(--white);
+    outline: none;
+    caret-color: var(--gold);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .ans-input:focus { border-color: var(--gold); box-shadow: 0 0 16px rgba(255,217,61,0.3); }
+  .ans-input.correct { border-color: var(--green); box-shadow: 0 0 16px rgba(78,205,196,0.5); }
+  .ans-input.wrong   { border-color: var(--red); box-shadow: 0 0 16px rgba(255,71,87,0.4); animation: shake 0.4s ease; }
+  @keyframes shake {
+    0%,100%{ transform: translateX(0); }
+    20%{ transform: translateX(-8px); }
+    40%{ transform: translateX(8px); }
+    60%{ transform: translateX(-6px); }
+    80%{ transform: translateX(6px); }
+  }
+  .fire-btn {
+    margin-top: 12px;
+    display: block;
+    width: 140px;
+    margin-inline: auto;
+    padding: 12px;
+    font-family: 'Secular One', sans-serif;
+    font-size: 1.05rem;
+    background: linear-gradient(135deg, var(--gold), var(--orange));
+    color: #111;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(255,107,53,0.4);
+    transition: transform 0.15s;
+  }
+  .fire-btn:hover { transform: scale(1.04); }
+  .feedback-txt {
+    font-size: 1.1rem;
+    font-weight: 700;
+    min-height: 28px;
+    margin-top: 8px;
+  }
+  .feedback-txt.good { color: var(--green); }
+  .feedback-txt.bad  { color: var(--red); }
+
+  /* Particles */
+  .particle {
+    position: fixed;
+    pointer-events: none;
+    font-size: 1.5rem;
+    animation: floatUp 1s ease-out forwards;
+    z-index: 999;
+  }
+  @keyframes floatUp {
+    0%   { transform: translateY(0) scale(1); opacity: 1; }
+    100% { transform: translateY(-120px) scale(0.5); opacity: 0; }
+  }
+
+  /* ── OVERLAYS ── */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 24px;
+  }
+  .overlay.show { display: flex; }
+
+  #launch-overlay {
+    background: radial-gradient(circle at 50% 65%, rgba(255,107,53,0.8) 0%, rgba(6,6,15,0.96) 65%);
+    backdrop-filter: blur(4px);
+  }
+  .launch-rocket { font-size: 5rem; animation: flyUp 2.4s ease-in forwards; }
+  @keyframes flyUp {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(-110vh); }
+  }
+  .launch-title {
+    font-family: 'Secular One', sans-serif;
+    font-size: clamp(1.7rem, 6vw, 3rem);
+    color: #fff;
+    text-shadow: 0 0 28px rgba(255,255,255,0.6);
+    text-align: center;
+    animation: pulse 0.6s ease-in-out infinite alternate;
+  }
+  @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.06); } }
+  .launch-score-txt { font-size: 1.2rem; color: var(--gold); font-weight: 700; }
+
+  /* overlay inner card */
+  .ov-card {
+    background: linear-gradient(135deg, rgba(42,26,110,0.92), rgba(13,13,43,0.97));
+    border: 2px solid rgba(255,217,61,0.35);
+    border-radius: 24px;
+    padding: 24px 30px;
+    text-align: center;
+    width: min(380px, 90vw);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    animation: fadeIn 0.5s ease;
+  }
+  .ov-card.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+  .ov-card .sub { font-size: 0.9rem; color: rgba(255,255,255,0.6); }
+  .ov-card .ov-q {
+    font-size: clamp(1.5rem, 5vw, 2.2rem);
+    font-weight: 900;
+    color: var(--white);
+    direction: ltr;
+    unicode-bidi: bidi-override;
+  }
+  .skip-btn {
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.7);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 50px;
+    padding: 9px 24px;
+    font-family: 'Rubik', sans-serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .skip-btn:hover { background: rgba(255,255,255,0.2); }
+
+  /* Game over */
+  #gameover-overlay {
+    background: rgba(0,0,0,0.93);
+    backdrop-filter: blur(14px);
+  }
+  .go-emoji { font-size: 4rem; }
+  .go-title {
+    font-family: 'Secular One', sans-serif;
+    font-size: clamp(1.8rem, 7vw, 3.2rem);
+    color: var(--red);
+    text-align: center;
+  }
+  .go-score { font-size: 1.2rem; color: var(--gold); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div class="game-wrapper">
+  <h1>🚀 משחק הרקטה של <span class="name">עומר</span></h1>
+
+  <div class="hud">
+    <div class="hud-item"><span>⭐</span><span id="score-display">0</span></div>
+    <div class="hud-item"><span>❤️</span><span id="lives-display">3</span></div>
+    <div class="hud-item"><span>🔥</span><span id="streak-display">0</span></div>
+  </div>
+
+  <div class="fuel-section">
+    <div class="fuel-label">⛽ דלק לרקטה של עומר</div>
+    <div class="fuel-bar-bg"><div class="fuel-bar" id="fuel-bar" style="width:0%"></div></div>
+  </div>
+
+  <div class="scene">
+    <div class="launchpad"></div>
+    <div class="rocket-wrap" id="rocket-wrap">
+      <svg class="rocket-svg" viewBox="0 0 80 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M40 8 C28 30 22 60 22 85 L58 85 C58 60 52 30 40 8Z" fill="url(#bodyGrad)"/>
+        <path d="M40 8 C34 20 30 30 30 40 L50 40 C50 30 46 20 40 8Z" fill="#e0e8ff"/>
+        <circle cx="40" cy="55" r="9" fill="#1a1a4e" stroke="#4ecdc4" stroke-width="2"/>
+        <circle cx="37" cy="52" r="3" fill="rgba(255,255,255,0.3)"/>
+        <path d="M22 75 L8 95 L22 90Z" fill="url(#wingGrad)"/>
+        <path d="M58 75 L72 95 L58 90Z" fill="url(#wingGrad)"/>
+        <rect x="28" y="82" width="24" height="6" rx="2" fill="#aab4d0"/>
+        <path d="M28 65 L52 65" stroke="#ff6b35" stroke-width="3" stroke-linecap="round"/>
+        <path d="M26 72 L54 72" stroke="#ffd93d" stroke-width="2" stroke-linecap="round"/>
+        <defs>
+          <linearGradient id="bodyGrad" x1="22" y1="8" x2="58" y2="85" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#c8d6f0"/><stop offset="100%" stop-color="#8898c0"/>
+          </linearGradient>
+          <linearGradient id="wingGrad" x1="0" y1="75" x2="0" y2="95" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#ff6b35"/><stop offset="100%" stop-color="#c0392b"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="flame" id="flame"></div>
+    </div>
+    <div class="ground"></div>
+  </div>
+
+  <div class="question-card">
+    <div class="question-text" id="question-text">טוען...</div>
+    <input type="number" class="ans-input" id="main-input" placeholder="?" autocomplete="off" inputmode="numeric"/>
+    <button class="fire-btn" id="main-btn">✈️ שגר!</button>
+    <div class="feedback-txt" id="main-fb"></div>
+  </div>
+</div>
+
+<!-- ── LAUNCH OVERLAY ── -->
+<div class="overlay" id="launch-overlay">
+  <div class="launch-rocket">🚀</div>
+  <div class="launch-title">🎉 שיגור מוצלח, עומר!<br>אתה גאון!</div>
+  <div class="launch-score-txt">ניקוד: <span id="launch-score-val">0</span> ⭐</div>
+
+  <div class="ov-card" id="launch-card">
+    <div class="sub">עומר, פתור תרגיל ושגר שוב! 🚀</div>
+    <div class="ov-q" id="launch-q"></div>
+    <input type="number" class="ans-input" id="launch-input" placeholder="?" inputmode="numeric" autocomplete="off"/>
+    <button class="fire-btn" id="launch-btn">🚀 שגר שוב!</button>
+    <div class="feedback-txt" id="launch-fb"></div>
+    <button class="skip-btn" id="launch-skip">דלג ←</button>
+  </div>
+</div>
+
+<!-- ── GAME OVER OVERLAY ── -->
+<div class="overlay" id="gameover-overlay">
+  <div class="go-emoji">💥</div>
+  <div class="go-title">אוי עומר!<br>נגמר הדלק!</div>
+  <div class="go-score">ניקוד: <span id="final-score">0</span> ⭐</div>
+
+  <div class="ov-card show">
+    <div class="sub">פתור תרגיל כדי לנסות שוב! 💪</div>
+    <div class="ov-q" id="gameover-q"></div>
+    <input type="number" class="ans-input" id="gameover-input" placeholder="?" inputmode="numeric" autocomplete="off"/>
+    <button class="fire-btn" id="gameover-btn">💪 נסה שוב!</button>
+    <div class="feedback-txt" id="gameover-fb"></div>
+    <button class="skip-btn" id="gameover-skip">דלג ←</button>
+  </div>
+</div>
+
+<script>
+// Stars
+const sc = document.getElementById('stars');
+for (let i = 0; i < 120; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  const sz = Math.random() * 2.5 + 0.5;
+  s.style.cssText = `width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${(Math.random()*2+1).toFixed(1)}s;animation-delay:${(Math.random()*3).toFixed(1)}s`;
+  sc.appendChild(s);
+}
+
+// ── Hebrew Voice (Web Speech API + ElevenLabs fallback) ──
+const XI_KEY   = 'sk_50f2d900d79ed5f3305e3693e29f59d1bf912b4d2ea9a7e8';
+const VOICE_ID = 'EXAVITQu4vr4xnSDxMaL';
+const MODEL_ID = 'eleven_multilingual_v2';
+
+const V = {
+  intro:    'שלום עומר! ברוך הבא למשחק הרקטה! פתור תרגילים, מלא את הדלק, ושגר את הרקטה לחלל!',
+  correct:  ['כל הכבוד עומר!', 'מדהים!', 'נכון מאוד!', 'סופר עומר!', 'אתה גאון!', 'יופי של תשובה!', 'וואו, מצוין!'],
+  wrong:    ['אוי, לא נכון. נסה שוב עומר!', 'טעות קטנה, אתה יכול!', 'לא נכון, עוד פעם!'],
+  launch:   'שיגור מוצלח! עומר, אתה אלוף אמיתי! כל הכבוד!',
+  gameover: 'אוי עומר, נגמר הדלק! אבל אני יודעת שאתה יכול לנסות שוב!',
+  streak3:  'שלוש תשובות נכונות ברצף! עומר, אתה בוער!',
+  streak5:  'חמש ברצף! עומר, אתה פשוט מדהים!'
+};
+
+// -- ElevenLabs path --
+const audioCache = {};
+let audioQueue = [];
+let isPlaying   = false;
+let useElevenLabs = true; // will flip to false if it fails
+
+async function fetchAudio(text) {
+  if (audioCache[text]) return audioCache[text];
+  try {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
+      method: 'POST',
+      headers: { 'xi-api-key': XI_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text,
+        model_id: MODEL_ID,
+        voice_settings: { stability: 0.5, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true }
+      })
+    });
+    if (!res.ok) { useElevenLabs = false; return null; }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    audioCache[text] = url;
+    return url;
+  } catch(e) { useElevenLabs = false; return null; }
+}
+
+// -- Web Speech API fallback --
+let hebrewVoice = null;
+function initVoices() {
+  const voices = window.speechSynthesis.getVoices();
+  hebrewVoice = voices.find(v => v.lang === 'he-IL') ||
+                voices.find(v => v.lang.startsWith('he')) ||
+                voices.find(v => v.name.toLowerCase().includes('hebrew')) ||
+                null;
+}
+window.speechSynthesis.onvoiceschanged = initVoices;
+initVoices();
+
+function speakNative(text) {
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = 'he-IL';
+  utt.rate = 0.95;
+  utt.pitch = 1.1;
+  if (hebrewVoice) utt.voice = hebrewVoice;
+  window.speechSynthesis.speak(utt);
+}
+
+// -- Unified queue --
+async function playQueue() {
+  if (!audioQueue.length) { isPlaying = false; return; }
+  isPlaying = true;
+  const text = audioQueue.shift();
+  if (useElevenLabs) {
+    const url = await fetchAudio(text);
+    if (url) {
+      const audio = new Audio(url);
+      audio.onended = playQueue;
+      audio.onerror = () => { speakNative(text); playQueue(); };
+      audio.play().catch(() => { speakNative(text); playQueue(); });
+      return;
+    }
+  }
+  speakNative(text);
+  // native speech has no clean "ended" callback for queue, so just wait a beat
+  const dur = Math.max(1200, text.length * 80);
+  setTimeout(playQueue, dur);
+}
+
+function speak(text) {
+  audioQueue.push(text);
+  if (!isPlaying) playQueue();
+}
+
+function speakRandom(arr) { speak(arr[Math.floor(Math.random() * arr.length)]); }
+
+// Warm up ElevenLabs with a silent pre-fetch
+fetchAudio(V.intro);
+
+// ── Game State ──
+let score, lives, streak, fuel, currentAnswer, locked, ovAnswer;
+const FUEL_UP = 12, FUEL_DOWN = 20, MAX_FUEL = 100;
+const goodMsgs = ['כל הכבוד, עומר! 🌟', 'מדהים! ⭐', 'נכון! 🎯', 'סופר! 🔥', 'מעולה! ✨', 'וואו עומר! 🚀'];
+const badMsgs  = ['נסה שוב עומר! 💪', 'לא נכון 😅', 'עוד פעם! 🎲'];
+
+function makeQ() {
+  const op = Math.random() < 0.5 ? '+' : '-';
+  let a, b, ans;
+  if (op === '+') { a = Math.floor(Math.random()*91)+5; b = Math.floor(Math.random()*(100-a))+1; ans = a+b; }
+  else             { a = Math.floor(Math.random()*81)+15; b = Math.floor(Math.random()*(a-1))+1; ans = a-b; }
+  return { text: `${a} ${op} ${b} = ?`, answer: ans };
+}
+
+function genMain() {
+  const q = makeQ();
+  currentAnswer = q.answer;
+  document.getElementById('question-text').textContent = q.text;
+}
+
+function setFuel(v) {
+  fuel = Math.max(0, Math.min(MAX_FUEL, v));
+  document.getElementById('fuel-bar').style.width = fuel + '%';
+  document.getElementById('flame').className = 'flame' + (fuel > 0 ? ' active' : '');
+}
+
+function particle(x, y, e) {
+  const p = document.createElement('div');
+  p.className = 'particle'; p.textContent = e;
+  p.style.left = x+'px'; p.style.top = y+'px';
+  document.body.appendChild(p);
+  setTimeout(() => p.remove(), 1000);
+}
+
+function setupOvInput(inputId, btnId, fbId, skipId, onCorrect, onSkip) {
+  const input = document.getElementById(inputId);
+  const btn   = document.getElementById(btnId);
+  const fb    = document.getElementById(fbId);
+  const skip  = document.getElementById(skipId);
+
+  function attempt() {
+    const val = parseInt(input.value);
+    if (isNaN(val)) return;
+    if (val === ovAnswer) {
+      input.classList.add('correct');
+      fb.className = 'feedback-txt good';
+      fb.textContent = 'מצוין עומר! 🌟';
+      speak('מצוין עומר! בוא נתחיל!');
+      setTimeout(onCorrect, 1200);
+    } else {
+      input.classList.add('wrong');
+      fb.className = 'feedback-txt bad';
+      fb.textContent = `לא נכון 😅 התשובה: ${ovAnswer}`;
+      speak('לא נכון, נסה שוב!');
+      setTimeout(() => { input.value=''; input.className='ans-input'; }, 1200);
+    }
+  }
+  btn.onclick = attempt;
+  input.onkeydown = e => { if (e.key==='Enter') attempt(); };
+  skip.onclick = onSkip;
+}
+
+// ── Main check ──
+function checkMain() {
+  if (locked) return;
+  const input = document.getElementById('main-input');
+  const val = parseInt(input.value);
+  if (isNaN(val)) return;
+  locked = true;
+  const fb = document.getElementById('main-fb');
+
+  if (val === currentAnswer) {
+    score += 10 + streak*2; streak++;
+    setFuel(fuel + FUEL_UP);
+    input.classList.add('correct');
+    fb.className = 'feedback-txt good';
+    fb.textContent = goodMsgs[Math.floor(Math.random()*goodMsgs.length)];
+    document.getElementById('rocket-wrap').classList.add('boost');
+    setTimeout(() => document.getElementById('rocket-wrap').classList.remove('boost'), 400);
+    const r = input.getBoundingClientRect();
+    ['⭐','🌟','✨'].forEach((e,i) => setTimeout(() => particle(r.left+Math.random()*60, r.top, e), i*100));
+
+    // Voice feedback
+    if (streak === 3) speak(V.streak3);
+    else if (streak === 5) speak(V.streak5);
+    else speakRandom(V.correct);
+
+    if (fuel >= MAX_FUEL) { setTimeout(triggerLaunch, 600); return; }
+  } else {
+    streak = 0; lives--;
+    setFuel(fuel - FUEL_DOWN);
+    input.classList.add('wrong');
+    fb.className = 'feedback-txt bad';
+    fb.textContent = badMsgs[Math.floor(Math.random()*badMsgs.length)] + ` (תשובה: ${currentAnswer})`;
+    document.getElementById('lives-display').textContent = lives;
+    speakRandom(V.wrong);
+    if (lives <= 0) { setTimeout(triggerGameOver, 800); return; }
+  }
+
+  document.getElementById('score-display').textContent = score;
+  document.getElementById('streak-display').textContent = streak;
+  document.getElementById('lives-display').textContent = lives;
+
+  setTimeout(() => {
+    input.value = ''; input.className = 'ans-input';
+    fb.textContent = '';
+    genMain(); locked = false; input.focus();
+  }, 1200);
+}
+
+// ── Launch ──
+function triggerLaunch() {
+  speak(V.launch);
+  document.getElementById('launch-score-val').textContent = score;
+  document.getElementById('launch-overlay').classList.add('show');
+  setTimeout(() => {
+    const q = makeQ(); ovAnswer = q.answer;
+    document.getElementById('launch-q').textContent = q.text;
+    const inp = document.getElementById('launch-input');
+    inp.value=''; inp.className='ans-input';
+    document.getElementById('launch-fb').textContent='';
+    document.getElementById('launch-card').classList.add('show');
+    setTimeout(() => inp.focus(), 80);
+  }, 2200);
+}
+setupOvInput('launch-input','launch-btn','launch-fb','launch-skip', startGame, startGame);
+
+// ── Game over ──
+function triggerGameOver() {
+  speak(V.gameover);
+  document.getElementById('final-score').textContent = score;
+  const q = makeQ(); ovAnswer = q.answer;
+  document.getElementById('gameover-q').textContent = q.text;
+  const inp = document.getElementById('gameover-input');
+  inp.value=''; inp.className='ans-input';
+  document.getElementById('gameover-fb').textContent='';
+  document.getElementById('gameover-overlay').classList.add('show');
+  setTimeout(() => inp.focus(), 80);
+}
+setupOvInput('gameover-input','gameover-btn','gameover-fb','gameover-skip', startGame, startGame);
+
+// ── Start ──
+function startGame() {
+  score=0; lives=3; streak=0; locked=false; ovAnswer=null;
+  setFuel(8);
+  ['score-display','lives-display','streak-display'].forEach((id,i) => document.getElementById(id).textContent = [0,3,0][i]);
+  document.getElementById('main-fb').textContent='';
+  const mi = document.getElementById('main-input'); mi.value=''; mi.className='ans-input';
+  document.getElementById('launch-overlay').classList.remove('show');
+  document.getElementById('launch-card').classList.remove('show');
+  document.getElementById('gameover-overlay').classList.remove('show');
+  genMain();
+  setTimeout(() => mi.focus(), 100);
+  speak(V.intro);
+}
+
+document.getElementById('main-input').addEventListener('keydown', e => { if(e.key==='Enter') checkMain(); });
+document.getElementById('main-btn').addEventListener('click', checkMain);
+
+startGame();
+</script>
+</body>
+</html>
