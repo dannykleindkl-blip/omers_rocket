@@ -180,91 +180,57 @@ h1 .name{color:#fff;text-shadow:0 0 20px rgba(78,205,196,.9);}
   }
 })();
 
-// ── ElevenLabs Voice (same pattern as working games) ──
+// ── ElevenLabs Voice — exact pattern from working games ──
 const EL_KEY   = 'sk_c6f1cac3fee162140ff062cea2db07d421385f224a516d52';
-const EL_VOICE = 'XB0fDUnXU5powFXDhCwa'; // Charlotte — warm, works great for Hebrew
-const EL_MODEL = 'eleven_turbo_v2_5';     // turbo = fast + high quality
+const EL_VOICE = 'XB0fDUnXU5powFXDhCwa'; // Charlotte
+const EL_MODEL = 'eleven_turbo_v2_5';
 
 let audioCache   = {};
 let currentAudio = null;
 let lastText     = '';
 let voiceEnabled = false;
 
+// All phrases in English phonetics — ElevenLabs works best with English
 const V = {
-  intro:    'שלום עומר! ברוך הבא למשחק הרקטה! פתור תרגילים, מלא את הדלק, ושגר את הרקטה!',
-  correct:  ['כל הכבוד עומר!','מדהים!','נכון מאוד!','סופר עומר!','אתה גאון!','יופי של תשובה!'],
-  wrong:    ['לא נכון, נסה שוב עומר!','טעות קטנה, אתה יכול!','עוד פעם עומר!'],
-  launch:   'שיגור מוצלח! עומר אתה אלוף אמיתי!',
-  gameover: 'אוי עומר, נגמר הדלק! אבל אתה יכול לנסות שוב!',
-  streak3:  'שלוש ברצף! עומר אתה בוער!',
-  streak5:  'חמש ברצף! עומר אתה פשוט מדהים!'
+  intro:    "Sha-lom Oh-mer! Welcome to the rocket game! Solve math problems, fill the fuel, and launch the rocket!",
+  correct:  ["Kol ha-kavod Oh-mer!", "Mad-him!", "Nach-on me-od!", "Soo-per Oh-mer!", "Ata ga-on!", "Yoh-fi shel tesh-uva!"],
+  wrong:    ["Lo na-chon, na-se shuv Oh-mer!", "Taut kta-na, a-ta ya-chol!", "Od pa-am Oh-mer!"],
+  launch:   "Shi-gur muts-lach! Oh-mer, a-ta a-luf a-mi-ti! Kol ha-kavod!",
+  gameover: "Oy Oh-mer, nig-mar ha-de-lek! A-val a-ni yo-da-at she-a-ta ya-chol la-not shuv!",
+  streak3:  "Sha-losh ba-re-tsef! Oh-mer, a-ta bo-er!",
+  streak5:  "Cha-mesh ba-re-tsef! Oh-mer, a-ta pash-ut mad-him!"
 };
-
-// Phonetic fixes so the voice pronounces Hebrew names naturally
-function phonetic(text) {
-  return text
-    .replace(/עומר/g, 'Oh-mer')
-    .replace(/כל הכבוד/g, 'kol ha-ka-vod')
-    .replace(/מדהים/g, 'mad-him')
-    .replace(/גאון/g, 'ga-on')
-    .replace(/שיגור/g, 'shi-gur')
-    .replace(/מוצלח/g, 'muts-lach')
-    .replace(/אלוף/g, 'a-luf')
-    .replace(/נגמר/g, 'nig-mar')
-    .replace(/הדלק/g, 'ha-de-lek')
-    .replace(/ברצף/g, 'ba-re-tsef')
-    .replace(/בוער/g, 'bo-er');
-}
 
 async function speak(text, onDone) {
   if (!voiceEnabled || !text) return;
   lastText = text;
-  const phrase = phonetic(text);
-
-  // Stop anything currently playing
   if (currentAudio) { try { currentAudio.pause(); currentAudio.currentTime = 0; } catch(e){} }
-
-  // Serve from cache
-  if (audioCache[phrase]) { playBlob(audioCache[phrase], onDone); return; }
-
+  if (audioCache[text]) { playBlob(audioCache[text], onDone); return; }
   try {
     const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${EL_VOICE}`, {
       method: 'POST',
       headers: { 'xi-api-key': EL_KEY, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
       body: JSON.stringify({
-        text: phrase,
+        text,
         model_id: EL_MODEL,
         voice_settings: { stability: 0.50, similarity_boost: 0.85, style: 0.35, use_speaker_boost: true }
       })
     });
-    if (!res.ok) throw new Error('ElevenLabs ' + res.status);
+    if (!res.ok) throw new Error(res.status);
     const url = URL.createObjectURL(await res.blob());
-    audioCache[phrase] = url;
+    audioCache[text] = url;
     playBlob(url, onDone);
   } catch(e) {
-    console.warn('ElevenLabs error, using device voice:', e);
-    fallbackSpeak(text, onDone);
+    console.warn('ElevenLabs error:', e);
+    const btn = document.getElementById('sound-btn');
+    if (btn) btn.classList.remove('talking');
   }
 }
 
 function playBlob(url, onDone) {
-  const audio = new Audio(url);
-  currentAudio = audio;
-  audio.onended = audio.onerror = () => { if (onDone) onDone(); };
-  audio.play().catch(() => { if (onDone) onDone(); });
-}
-
-// Fallback: device Hebrew voice
-function fallbackSpeak(text, onDone) {
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(phonetic(text));
-  u.lang = 'he-IL'; u.rate = 0.88; u.pitch = 1.05;
-  const voices = window.speechSynthesis.getVoices();
-  const heb = voices.find(v => v.name.includes('Asaf')) ||
-              voices.find(v => v.lang === 'he-IL') || null;
-  if (heb) u.voice = heb;
-  u.onend = u.onerror = () => { if (onDone) onDone(); };
-  window.speechSynthesis.speak(u);
+  const a = new Audio(url); currentAudio = a;
+  a.onended = a.onerror = () => { if (onDone) onDone(); };
+  a.play().catch(() => { if (onDone) onDone(); });
 }
 
 function speakRandom(arr) { speak(arr[Math.floor(Math.random()*arr.length)]); }
@@ -309,7 +275,6 @@ function setupOv(inputId,btnId,fbId,skipId,onOk,onSkip){
   const fb =document.getElementById(fbId);
   const sk =document.getElementById(skipId);
   function go(){
-    unlockOnce();
     const val=parseInt(inp.value);
     if(isNaN(val))return;
     if(val===ovAnswer){
@@ -334,7 +299,6 @@ setupOv('gameover-input','gameover-btn','gameover-fb','gameover-skip',startGame,
 // ── Main answer ──
 function checkMain(){
   if(locked)return;
-  unlockOnce();
   const inp=document.getElementById('main-input');
   const val=parseInt(inp.value);
   if(isNaN(val))return;
