@@ -146,17 +146,7 @@ h1 .name{color:#fff;text-shadow:0 0 20px rgba(78,205,196,.9);}
 })();
 
 // ── Voice ──
-var voiceOn=false, hVoice=null;
-
-function findVoice(){
-  var all=window.speechSynthesis.getVoices();
-  hVoice=all.find(function(v){return v.name.indexOf('Asaf')>-1;})||
-         all.find(function(v){return v.name.indexOf('Carmit')>-1;})||
-         all.find(function(v){return v.lang==='he-IL';})||
-         all.find(function(v){return v.lang.indexOf('he')===0;})||null;
-}
-window.speechSynthesis.onvoiceschanged=findVoice;
-setTimeout(findVoice,500);
+var voiceOn=false, hVoice=null, voicesLoaded=false;
 
 var V={
   intro:'שלום עומר! ברוך הבא למשחק הרקטה!',
@@ -168,8 +158,28 @@ var V={
   streak5:'חמש ברצף! עומר אתה מדהים!'
 };
 
+function getVoices(){
+  return new Promise(function(resolve){
+    var voices=window.speechSynthesis.getVoices();
+    if(voices.length>0){resolve(voices);return;}
+    window.speechSynthesis.onvoiceschanged=function(){
+      resolve(window.speechSynthesis.getVoices());
+    };
+    // Fallback timeout
+    setTimeout(function(){resolve(window.speechSynthesis.getVoices());},2000);
+  });
+}
+
+function pickHebrew(voices){
+  return voices.find(function(v){return v.name.indexOf('Asaf')>-1;})||
+         voices.find(function(v){return v.name.indexOf('Carmit')>-1;})||
+         voices.find(function(v){return v.lang==='he-IL';})||
+         voices.find(function(v){return v.lang.indexOf('he')===0;})||
+         null;
+}
+
 function speak(txt){
-  if(!voiceOn)return;
+  if(!voiceOn||!txt)return;
   window.speechSynthesis.cancel();
   var u=new SpeechSynthesisUtterance(txt);
   u.lang='he-IL';u.rate=0.85;u.pitch=1.1;u.volume=1;
@@ -179,12 +189,16 @@ function speak(txt){
 function rnd(arr){speak(arr[Math.floor(Math.random()*arr.length)]);}
 
 function activateSound(){
-  findVoice();
-  voiceOn=true;
   var b=document.getElementById('sound-btn');
-  b.textContent='🔊 קול';b.classList.add('on');
-  b.onclick=function(){speak(V.intro);};
-  speak(V.intro);
+  b.textContent='🔊 ...';
+  getVoices().then(function(voices){
+    hVoice=pickHebrew(voices);
+    voiceOn=true;
+    b.textContent='🔊 קול';
+    b.classList.add('on');
+    b.onclick=function(){speak(V.intro);};
+    speak(V.intro);
+  });
 }
 
 // ── Game ──
