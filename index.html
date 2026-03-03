@@ -3,84 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>משחק הרקטה של עומר 🚀</title>
+<title>משחק הרקטה של עומר</title>
 <link href="https://fonts.googleapis.com/css2?family=Secular+One&family=Rubik:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
-:root {
-  --space:#06060f; --gold:#ffd93d; --orange:#ff6b35;
-  --green:#4ecdc4; --red:#ff4757; --white:#f0f4ff;
-}
+:root{--space:#06060f;--gold:#ffd93d;--orange:#ff6b35;--green:#4ecdc4;--red:#ff4757;--white:#f0f4ff;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Rubik',sans-serif;background:var(--space);color:var(--white);min-height:100vh;overflow:hidden;direction:rtl;}
-
 .stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
 .star{position:absolute;background:white;border-radius:50%;animation:twinkle var(--d,2s) ease-in-out infinite alternate;}
-@keyframes twinkle{from{opacity:0.1}to{opacity:1}}
-
+@keyframes twinkle{from{opacity:.1}to{opacity:1}}
 .game-wrapper{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;gap:14px;}
-
 h1{font-family:'Secular One',sans-serif;font-size:clamp(1.5rem,4.5vw,2.6rem);color:var(--gold);text-shadow:0 0 30px rgba(255,217,61,.5);text-align:center;}
 h1 .name{color:#fff;text-shadow:0 0 20px rgba(78,205,196,.9);}
-
-.hud{display:flex;gap:20px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:50px;padding:10px 24px;backdrop-filter:blur(8px);}
-.hud-item{display:flex;align-items:center;gap:8px;font-size:1.1rem;font-weight:700;}
-.hud-item span:first-child{font-size:1.4rem;}
-
+.hud{display:flex;gap:16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:50px;padding:10px 20px;backdrop-filter:blur(8px);flex-wrap:wrap;justify-content:center;}
+.hud-item{display:flex;align-items:center;gap:6px;font-size:1rem;font-weight:700;}
+.sound-btn{background:rgba(255,217,61,.2);border:1px solid rgba(255,217,61,.5);border-radius:20px;color:#ffd93d;padding:4px 14px;cursor:pointer;font-size:.9rem;font-family:'Rubik',sans-serif;transition:all .2s;}
+.sound-btn.on{background:rgba(78,205,196,.2);border-color:rgba(78,205,196,.5);color:#4ecdc4;}
 .fuel-section{width:min(420px,90vw);text-align:center;}
 .fuel-label{font-size:.85rem;color:var(--gold);margin-bottom:6px;}
 .fuel-bar-bg{background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.2);border-radius:50px;height:24px;overflow:hidden;}
-.fuel-bar{height:100%;border-radius:50px;background:linear-gradient(90deg,#4ecdc4,#ffd93d,#ff6b35);transition:width .5s cubic-bezier(.34,1.56,.64,1);position:relative;}
-.fuel-bar::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.3) 0%,transparent 60%);border-radius:50px;}
-
+.fuel-bar{height:100%;border-radius:50px;background:linear-gradient(90deg,#4ecdc4,#ffd93d,#ff6b35);transition:width .5s cubic-bezier(.34,1.56,.64,1);}
 .scene{position:relative;width:min(420px,90vw);height:160px;display:flex;align-items:flex-end;justify-content:center;}
 .rocket-wrap{position:absolute;bottom:0;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;}
 .rocket-wrap.boost{animation:boost .4s ease;}
-@keyframes boost{0%{filter:drop-shadow(0 0 0px #ffd93d)}50%{filter:drop-shadow(0 0 30px #ff6b35)}100%{filter:drop-shadow(0 0 10px #ffd93d)}}
+@keyframes boost{0%{filter:drop-shadow(0 0 0 #ffd93d)}50%{filter:drop-shadow(0 0 30px #ff6b35)}100%{filter:drop-shadow(0 0 10px #ffd93d)}}
 .rocket-svg{width:65px;}
-.flame{width:28px;height:40px;margin-top:-4px;border-radius:50% 50% 60% 60%;background:linear-gradient(to bottom,#fff 0%,#ffd93d 30%,#ff6b35 70%,transparent 100%);animation:flicker .15s ease-in-out infinite alternate;opacity:0;transition:opacity .3s;}
+.flame{width:28px;height:40px;margin-top:-4px;border-radius:50% 50% 60% 60%;background:linear-gradient(to bottom,#fff,#ffd93d 30%,#ff6b35 70%,transparent);animation:flicker .15s ease-in-out infinite alternate;opacity:0;transition:opacity .3s;}
 .flame.active{opacity:1;}
-@keyframes flicker{from{transform:scaleX(.85) scaleY(.95)}to{transform:scaleX(1.15) scaleY(1.05)}}
-.launchpad{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:110px;height:18px;background:linear-gradient(180deg,#555,#333);border-radius:6px 6px 0 0;border:1px solid #666;}
-.launchpad::before,.launchpad::after{content:'';position:absolute;bottom:0;width:14px;height:26px;background:#444;border-radius:4px 4px 0 0;}
-.launchpad::before{left:12px;}.launchpad::after{right:12px;}
+@keyframes flicker{from{transform:scaleX(.85)}to{transform:scaleX(1.15)}}
+.launchpad{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:110px;height:18px;background:linear-gradient(180deg,#555,#333);border-radius:6px 6px 0 0;}
 .ground{position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,rgba(78,205,196,.6),transparent);}
-
 .question-card{background:linear-gradient(135deg,rgba(42,26,110,.8),rgba(13,13,43,.9));border:2px solid rgba(255,217,61,.3);border-radius:24px;padding:22px 30px;text-align:center;width:min(420px,90vw);backdrop-filter:blur(12px);box-shadow:0 8px 40px rgba(0,0,0,.5);}
-.question-text{font-size:clamp(1.8rem,6vw,2.8rem);font-weight:900;color:var(--white);margin-bottom:14px;min-height:50px;display:flex;align-items:center;justify-content:center;direction:ltr;unicode-bidi:bidi-override;}
-
-.ans-input{width:140px;padding:11px 14px;font-size:1.7rem;font-family:'Rubik',sans-serif;font-weight:700;text-align:center;background:rgba(255,255,255,.1);border:2px solid rgba(255,217,61,.4);border-radius:14px;color:var(--white);outline:none;caret-color:var(--gold);transition:border-color .2s,box-shadow .2s;}
+.question-text{font-size:clamp(1.8rem,6vw,2.8rem);font-weight:900;color:var(--white);margin-bottom:14px;min-height:50px;display:flex;align-items:center;justify-content:center;direction:ltr;}
+.ans-input{width:140px;padding:11px 14px;font-size:1.7rem;font-family:'Rubik',sans-serif;font-weight:700;text-align:center;background:rgba(255,255,255,.1);border:2px solid rgba(255,217,61,.4);border-radius:14px;color:var(--white);outline:none;transition:border-color .2s,box-shadow .2s;}
 .ans-input:focus{border-color:var(--gold);box-shadow:0 0 16px rgba(255,217,61,.3);}
 .ans-input.correct{border-color:var(--green);box-shadow:0 0 16px rgba(78,205,196,.5);}
-.ans-input.wrong{border-color:var(--red);box-shadow:0 0 16px rgba(255,71,87,.4);animation:shake .4s ease;}
-@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
-
+.ans-input.wrong{border-color:var(--red);animation:shake .4s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 .fire-btn{margin-top:12px;display:block;width:150px;margin-inline:auto;padding:12px;font-family:'Secular One',sans-serif;font-size:1.05rem;background:linear-gradient(135deg,var(--gold),var(--orange));color:#111;border:none;border-radius:50px;cursor:pointer;box-shadow:0 4px 20px rgba(255,107,53,.4);transition:transform .15s;}
 .fire-btn:hover{transform:scale(1.04);}
-.feedback-txt{font-size:1.1rem;font-weight:700;min-height:28px;margin-top:8px;}
+.feedback-txt{font-size:1rem;font-weight:700;min-height:26px;margin-top:8px;}
 .feedback-txt.good{color:var(--green);}
 .feedback-txt.bad{color:var(--red);}
-
 .particle{position:fixed;pointer-events:none;font-size:1.5rem;animation:floatUp 1s ease-out forwards;z-index:999;}
-@keyframes floatUp{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-120px) scale(.5);opacity:0}}
-
+@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-120px)}}
 .overlay{display:none;position:fixed;inset:0;z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;}
 .overlay.show{display:flex;}
-#launch-overlay{background:radial-gradient(circle at 50% 65%,rgba(255,107,53,.8) 0%,rgba(6,6,15,.96) 65%);backdrop-filter:blur(4px);}
+#launch-overlay{background:radial-gradient(circle at 50% 65%,rgba(255,107,53,.8),rgba(6,6,15,.96) 65%);backdrop-filter:blur(4px);}
 .launch-rocket{font-size:5rem;animation:flyUp 2.4s ease-in forwards;}
 @keyframes flyUp{0%{transform:translateY(0)}100%{transform:translateY(-110vh)}}
-.launch-title{font-family:'Secular One',sans-serif;font-size:clamp(1.7rem,6vw,3rem);color:#fff;text-shadow:0 0 28px rgba(255,255,255,.6);text-align:center;animation:pulse .6s ease-in-out infinite alternate;}
+.launch-title{font-family:'Secular One',sans-serif;font-size:clamp(1.7rem,6vw,3rem);color:#fff;text-align:center;animation:pulse .6s ease-in-out infinite alternate;}
 @keyframes pulse{from{transform:scale(1)}to{transform:scale(1.06)}}
 .launch-score-txt{font-size:1.2rem;color:var(--gold);font-weight:700;}
-
-.ov-card{background:linear-gradient(135deg,rgba(42,26,110,.92),rgba(13,13,43,.97));border:2px solid rgba(255,217,61,.35);border-radius:24px;padding:24px 30px;text-align:center;width:min(380px,90vw);display:none;flex-direction:column;align-items:center;gap:12px;box-shadow:0 8px 40px rgba(0,0,0,.6);animation:fadeIn .5s ease;}
+.ov-card{background:linear-gradient(135deg,rgba(42,26,110,.92),rgba(13,13,43,.97));border:2px solid rgba(255,217,61,.35);border-radius:24px;padding:24px 30px;text-align:center;width:min(380px,90vw);display:none;flex-direction:column;align-items:center;gap:12px;}
 .ov-card.show{display:flex;}
-@keyframes fadeIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 .ov-card .sub{font-size:.9rem;color:rgba(255,255,255,.6);}
-.ov-card .ov-q{font-size:clamp(1.5rem,5vw,2.2rem);font-weight:900;color:var(--white);direction:ltr;unicode-bidi:bidi-override;}
-
-.skip-btn{background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.2);border-radius:50px;padding:9px 24px;font-family:'Rubik',sans-serif;font-size:.9rem;cursor:pointer;transition:background .2s;}
-.skip-btn:hover{background:rgba(255,255,255,.2);}
-
+.ov-card .ov-q{font-size:clamp(1.5rem,5vw,2.2rem);font-weight:900;direction:ltr;}
+.skip-btn{background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.2);border-radius:50px;padding:9px 24px;font-family:'Rubik',sans-serif;font-size:.9rem;cursor:pointer;}
 #gameover-overlay{background:rgba(0,0,0,.93);backdrop-filter:blur(14px);}
 .go-emoji{font-size:4rem;}
 .go-title{font-family:'Secular One',sans-serif;font-size:clamp(1.8rem,7vw,3.2rem);color:var(--red);text-align:center;}
@@ -88,16 +67,14 @@ h1 .name{color:#fff;text-shadow:0 0 20px rgba(78,205,196,.9);}
 </style>
 </head>
 <body>
-
 <div class="stars" id="stars"></div>
-
 <div class="game-wrapper">
   <h1>🚀 משחק הרקטה של <span class="name">עומר</span></h1>
   <div class="hud">
-    <div class="hud-item"><span>⭐</span><span id="score-display">0</span></div>
-    <div class="hud-item"><span>❤️</span><span id="lives-display">3</span></div>
-    <div class="hud-item"><span>🔥</span><span id="streak-display">0</span></div>
-    <div class="hud-item"><button id="sound-btn" onclick="activateSound()" style="background:rgba(255,217,61,0.2);border:1px solid rgba(255,217,61,0.5);border-radius:20px;color:#ffd93d;padding:4px 12px;cursor:pointer;font-size:0.9rem;font-family:Rubik,sans-serif;">🔇 קול</button></div>
+    <div class="hud-item">⭐ <span id="score-display">0</span></div>
+    <div class="hud-item">❤️ <span id="lives-display">3</span></div>
+    <div class="hud-item">🔥 <span id="streak-display">0</span></div>
+    <button class="sound-btn" id="sound-btn" onclick="activateSound()">🔇 קול</button>
   </div>
   <div class="fuel-section">
     <div class="fuel-label">⛽ דלק לרקטה של עומר</div>
@@ -107,22 +84,14 @@ h1 .name{color:#fff;text-shadow:0 0 20px rgba(78,205,196,.9);}
     <div class="launchpad"></div>
     <div class="rocket-wrap" id="rocket-wrap">
       <svg class="rocket-svg" viewBox="0 0 80 120" fill="none">
-        <path d="M40 8 C28 30 22 60 22 85 L58 85 C58 60 52 30 40 8Z" fill="url(#bG)"/>
-        <path d="M40 8 C34 20 30 30 30 40 L50 40 C50 30 46 20 40 8Z" fill="#e0e8ff"/>
+        <path d="M40 8C28 30 22 60 22 85L58 85C58 60 52 30 40 8Z" fill="url(#bG)"/>
+        <path d="M40 8C34 20 30 30 30 40L50 40C50 30 46 20 40 8Z" fill="#e0e8ff"/>
         <circle cx="40" cy="55" r="9" fill="#1a1a4e" stroke="#4ecdc4" stroke-width="2"/>
-        <circle cx="37" cy="52" r="3" fill="rgba(255,255,255,0.3)"/>
-        <path d="M22 75 L8 95 L22 90Z" fill="url(#wG)"/>
-        <path d="M58 75 L72 95 L58 90Z" fill="url(#wG)"/>
-        <rect x="28" y="82" width="24" height="6" rx="2" fill="#aab4d0"/>
-        <path d="M28 65 L52 65" stroke="#ff6b35" stroke-width="3" stroke-linecap="round"/>
-        <path d="M26 72 L54 72" stroke="#ffd93d" stroke-width="2" stroke-linecap="round"/>
+        <path d="M22 75L8 95L22 90Z" fill="url(#wG)"/>
+        <path d="M58 75L72 95L58 90Z" fill="url(#wG)"/>
         <defs>
-          <linearGradient id="bG" x1="22" y1="8" x2="58" y2="85" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#c8d6f0"/><stop offset="100%" stop-color="#8898c0"/>
-          </linearGradient>
-          <linearGradient id="wG" x1="0" y1="75" x2="0" y2="95" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#ff6b35"/><stop offset="100%" stop-color="#c0392b"/>
-          </linearGradient>
+          <linearGradient id="bG" x1="22" y1="8" x2="58" y2="85" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#c8d6f0"/><stop offset="100%" stop-color="#8898c0"/></linearGradient>
+          <linearGradient id="wG" x1="0" y1="75" x2="0" y2="95" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#ff6b35"/><stop offset="100%" stop-color="#c0392b"/></linearGradient>
         </defs>
       </svg>
       <div class="flame" id="flame"></div>
@@ -137,13 +106,12 @@ h1 .name{color:#fff;text-shadow:0 0 20px rgba(78,205,196,.9);}
   </div>
 </div>
 
-<!-- LAUNCH OVERLAY -->
 <div class="overlay" id="launch-overlay">
   <div class="launch-rocket">🚀</div>
   <div class="launch-title">🎉 שיגור מוצלח, עומר!<br>אתה גאון!</div>
   <div class="launch-score-txt">ניקוד: <span id="launch-score-val">0</span> ⭐</div>
   <div class="ov-card" id="launch-card">
-    <div class="sub">עומר, פתור תרגיל ושגר שוב! 🚀</div>
+    <div class="sub">פתור תרגיל ושגר שוב! 🚀</div>
     <div class="ov-q" id="launch-q"></div>
     <input type="number" class="ans-input" id="launch-input" placeholder="?" inputmode="numeric" autocomplete="off"/>
     <button class="fire-btn" id="launch-btn">🚀 שגר שוב!</button>
@@ -152,7 +120,6 @@ h1 .name{color:#fff;text-shadow:0 0 20px rgba(78,205,196,.9);}
   </div>
 </div>
 
-<!-- GAME OVER OVERLAY -->
 <div class="overlay" id="gameover-overlay">
   <div class="go-emoji">💥</div>
   <div class="go-title">אוי עומר!<br>נגמר הדלק!</div>
@@ -168,220 +135,172 @@ h1 .name{color:#fff;text-shadow:0 0 20px rgba(78,205,196,.9);}
 </div>
 
 <script>
-// ── Stars ──
 (function(){
-  const sc = document.getElementById('stars');
+  const sc=document.getElementById('stars');
   for(let i=0;i<120;i++){
-    const s=document.createElement('div');
-    s.className='star';
+    const s=document.createElement('div');s.className='star';
     const sz=Math.random()*2.5+0.5;
-    s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${(Math.random()*2+1).toFixed(1)}s;animation-delay:${(Math.random()*3).toFixed(1)}s`;
+    s.style.cssText='width:'+sz+'px;height:'+sz+'px;top:'+(Math.random()*100)+'%;left:'+(Math.random()*100)+'%;--d:'+(Math.random()*2+1).toFixed(1)+'s;animation-delay:'+(Math.random()*3).toFixed(1)+'s';
     sc.appendChild(s);
   }
 })();
 
-// ── Voice: Web Speech API (works on Windows, iOS, Android — no API needed) ──
-let voiceEnabled = false;
-let hebrewVoice  = null;
+// ── Voice ──
+var voiceOn=false, hVoice=null;
 
-const V = {
-  intro:    'שלום עומר! ברוך הבא למשחק הרקטה! פתור תרגילים, מלא את הדלק, ושגר את הרקטה לחלל!',
-  correct:  ['כל הכבוד עומר!','מדהים!','נכון מאוד!','סופר עומר!','אתה גאון!','יופי של תשובה!'],
-  wrong:    ['לא נכון, נסה שוב עומר!','טעות קטנה, אתה יכול!','עוד פעם עומר!'],
-  launch:   'שיגור מוצלח! עומר, אתה אלוף אמיתי! כל הכבוד!',
-  gameover: 'אוי עומר, נגמר הדלק! אבל אתה יכול לנסות שוב!',
-  streak3:  'שלוש ברצף! עומר, אתה בוער!',
-  streak5:  'חמש ברצף! עומר, אתה פשוט מדהים!'
+function findVoice(){
+  var all=window.speechSynthesis.getVoices();
+  hVoice=all.find(function(v){return v.name.indexOf('Asaf')>-1;})||
+         all.find(function(v){return v.name.indexOf('Carmit')>-1;})||
+         all.find(function(v){return v.lang==='he-IL';})||
+         all.find(function(v){return v.lang.indexOf('he')===0;})||null;
+}
+window.speechSynthesis.onvoiceschanged=findVoice;
+setTimeout(findVoice,500);
+
+var V={
+  intro:'שלום עומר! ברוך הבא למשחק הרקטה!',
+  correct:['כל הכבוד עומר','מדהים','נכון מאוד','סופר עומר','אתה גאון','יופי'],
+  wrong:['לא נכון, נסה שוב','טעות קטנה, אתה יכול','עוד פעם עומר'],
+  launch:'שיגור מוצלח! עומר אתה אלוף!',
+  gameover:'אוי עומר, נגמר הדלק! נסה שוב!',
+  streak3:'שלוש ברצף! עומר אתה בוער!',
+  streak5:'חמש ברצף! עומר אתה מדהים!'
 };
 
-function loadVoices() {
-  const all = window.speechSynthesis.getVoices();
-  hebrewVoice =
-    all.find(v => v.name.includes('Asaf'))        ||  // Windows
-    all.find(v => v.name.includes('Carmit'))       ||  // iOS/macOS
-    all.find(v => v.lang === 'he-IL')              ||
-    all.find(v => v.lang.startsWith('he'))         ||
-    null;
-}
-// Voices load async — listen for change and also try immediately
-window.speechSynthesis.onvoiceschanged = loadVoices;
-loadVoices();
-
-function speak(text) {
-  if (!voiceEnabled || !text) return;
+function speak(txt){
+  if(!voiceOn)return;
   window.speechSynthesis.cancel();
-  const utt   = new SpeechSynthesisUtterance(text);
-  utt.lang    = 'he-IL';
-  utt.rate    = 0.85;
-  utt.pitch   = 1.1;
-  utt.volume  = 1;
-  if (hebrewVoice) utt.voice = hebrewVoice;
-  window.speechSynthesis.speak(utt);
+  var u=new SpeechSynthesisUtterance(txt);
+  u.lang='he-IL';u.rate=0.85;u.pitch=1.1;u.volume=1;
+  if(hVoice)u.voice=hVoice;
+  window.speechSynthesis.speak(u);
 }
+function rnd(arr){speak(arr[Math.floor(Math.random()*arr.length)]);}
 
-function speakRandom(arr) { speak(arr[Math.floor(Math.random()*arr.length)]); }
+function activateSound(){
+  findVoice();
+  voiceOn=true;
+  var b=document.getElementById('sound-btn');
+  b.textContent='🔊 קול';b.classList.add('on');
+  b.onclick=function(){speak(V.intro);};
+  speak(V.intro);
+}
 
 // ── Game ──
-let score, lives, streak, fuel, currentAnswer, locked, ovAnswer;
-const FUEL_UP=12, FUEL_DOWN=20, MAX_FUEL=100;
-const goodMsgs=['כל הכבוד, עומר! 🌟','מדהים! ⭐','נכון! 🎯','סופר! 🔥','מעולה! ✨'];
-const badMsgs =['נסה שוב עומר! 💪','לא נכון 😅','עוד פעם! 🎲'];
+var score,lives,streak,fuel,ans,locked,ovAns;
+var FUEL_UP=12,FUEL_DOWN=20,MAX=100;
+var goodMsg=['כל הכבוד עומר! 🌟','מדהים! ⭐','נכון! 🎯','סופר! 🔥','מעולה! ✨'];
+var badMsg=['נסה שוב! 💪','לא נכון 😅','עוד פעם! 🎲'];
 
 function makeQ(){
-  const op=Math.random()<0.5?'+':'-';
-  let a,b,ans;
-  if(op==='+'){a=Math.floor(Math.random()*91)+5;b=Math.floor(Math.random()*(100-a))+1;ans=a+b;}
-  else        {a=Math.floor(Math.random()*81)+15;b=Math.floor(Math.random()*(a-1))+1;ans=a-b;}
-  return {text:`${a} ${op} ${b} = ?`,answer:ans};
+  var op=Math.random()<0.5?'+':'-',a,b,r;
+  if(op==='+'){a=Math.floor(Math.random()*91)+5;b=Math.floor(Math.random()*(100-a))+1;r=a+b;}
+  else{a=Math.floor(Math.random()*81)+15;b=Math.floor(Math.random()*(a-1))+1;r=a-b;}
+  return{text:a+' '+op+' '+b+' = ?',answer:r};
 }
-
-function genMain(){
-  const q=makeQ(); currentAnswer=q.answer;
-  document.getElementById('question-text').textContent=q.text;
-}
-
+function genMain(){var q=makeQ();ans=q.answer;document.getElementById('question-text').textContent=q.text;}
 function setFuel(v){
-  fuel=Math.max(0,Math.min(MAX_FUEL,v));
+  fuel=Math.max(0,Math.min(MAX,v));
   document.getElementById('fuel-bar').style.width=fuel+'%';
   document.getElementById('flame').className='flame'+(fuel>0?' active':'');
 }
-
 function particle(x,y,e){
-  const p=document.createElement('div');
-  p.className='particle';p.textContent=e;
+  var p=document.createElement('div');p.className='particle';p.textContent=e;
   p.style.left=x+'px';p.style.top=y+'px';
-  document.body.appendChild(p);
-  setTimeout(()=>p.remove(),1000);
+  document.body.appendChild(p);setTimeout(function(){p.remove();},1000);
 }
 
-// ── Overlay inputs ──
-function setupOv(inputId,btnId,fbId,skipId,onOk,onSkip){
-  const inp=document.getElementById(inputId);
-  const btn=document.getElementById(btnId);
-  const fb =document.getElementById(fbId);
-  const sk =document.getElementById(skipId);
+function setupOv(iId,bId,fId,sId,ok,skip){
+  var inp=document.getElementById(iId),btn=document.getElementById(bId),
+      fb=document.getElementById(fId),sk=document.getElementById(sId);
   function go(){
-    const val=parseInt(inp.value);
-    if(isNaN(val))return;
-    if(val===ovAnswer){
-      inp.classList.add('correct');
-      fb.className='feedback-txt good';fb.textContent='מצוין! 🌟';
-      speak('מצוין עומר!');
-      setTimeout(onOk,1300);
-    } else {
-      inp.classList.add('wrong');
-      fb.className='feedback-txt bad';fb.textContent=`לא נכון 😅 התשובה: ${ovAnswer}`;
-      speak('לא נכון, נסה שוב!');
-      setTimeout(()=>{inp.value='';inp.className='ans-input';},1200);
+    var v=parseInt(inp.value);if(isNaN(v))return;
+    if(v===ovAns){
+      inp.classList.add('correct');fb.className='feedback-txt good';fb.textContent='מצוין! 🌟';
+      speak('מצוין עומר!');setTimeout(ok,1300);
+    }else{
+      inp.classList.add('wrong');fb.className='feedback-txt bad';fb.textContent='לא נכון 😅 התשובה: '+ovAns;
+      speak('לא נכון, נסה שוב');setTimeout(function(){inp.value='';inp.className='ans-input';},1200);
     }
   }
-  btn.onclick=go;
-  inp.onkeydown=e=>{if(e.key==='Enter')go();};
-  sk.onclick=onSkip;
+  btn.onclick=go;inp.onkeydown=function(e){if(e.key==='Enter')go();};sk.onclick=skip;
 }
 setupOv('launch-input','launch-btn','launch-fb','launch-skip',startGame,startGame);
 setupOv('gameover-input','gameover-btn','gameover-fb','gameover-skip',startGame,startGame);
 
-// ── Main answer ──
 function checkMain(){
   if(locked)return;
-  const inp=document.getElementById('main-input');
-  const val=parseInt(inp.value);
-  if(isNaN(val))return;
+  var inp=document.getElementById('main-input'),v=parseInt(inp.value);
+  if(isNaN(v))return;
   locked=true;
-  const fb=document.getElementById('main-fb');
-
-  if(val===currentAnswer){
-    score+=10+streak*2; streak++;
-    setFuel(fuel+FUEL_UP);
+  var fb=document.getElementById('main-fb');
+  if(v===ans){
+    score+=10+streak*2;streak++;setFuel(fuel+FUEL_UP);
     inp.classList.add('correct');
-    fb.className='feedback-txt good';
-    fb.textContent=goodMsgs[Math.floor(Math.random()*goodMsgs.length)];
+    fb.className='feedback-txt good';fb.textContent=goodMsg[Math.floor(Math.random()*goodMsg.length)];
     document.getElementById('rocket-wrap').classList.add('boost');
-    setTimeout(()=>document.getElementById('rocket-wrap').classList.remove('boost'),400);
-    const r=inp.getBoundingClientRect();
-    ['⭐','🌟','✨'].forEach((e,i)=>setTimeout(()=>particle(r.left+Math.random()*60,r.top,e),i*100));
-    if     (streak===3)speak(V.streak3);
-    else if(streak===5)speak(V.streak5);
-    else speakRandom(V.correct);
-    if(fuel>=MAX_FUEL){setTimeout(triggerLaunch,600);return;}
-  } else {
-    streak=0;lives--;
-    setFuel(fuel-FUEL_DOWN);
+    setTimeout(function(){document.getElementById('rocket-wrap').classList.remove('boost');},400);
+    var r=inp.getBoundingClientRect();
+    ['⭐','🌟','✨'].forEach(function(e,i){setTimeout(function(){particle(r.left+Math.random()*60,r.top,e);},i*100);});
+    if(streak===3)speak(V.streak3);else if(streak===5)speak(V.streak5);else rnd(V.correct);
+    if(fuel>=MAX){setTimeout(triggerLaunch,600);return;}
+  }else{
+    streak=0;lives--;setFuel(fuel-FUEL_DOWN);
     inp.classList.add('wrong');
-    fb.className='feedback-txt bad';
-    fb.textContent=badMsgs[Math.floor(Math.random()*badMsgs.length)]+` (תשובה: ${currentAnswer})`;
+    fb.className='feedback-txt bad';fb.textContent=badMsg[Math.floor(Math.random()*badMsg.length)]+' (תשובה: '+ans+')';
     document.getElementById('lives-display').textContent=lives;
-    speakRandom(V.wrong);
+    rnd(V.wrong);
     if(lives<=0){setTimeout(triggerGameOver,800);return;}
   }
   document.getElementById('score-display').textContent=score;
   document.getElementById('streak-display').textContent=streak;
   document.getElementById('lives-display').textContent=lives;
-  setTimeout(()=>{
-    inp.value='';inp.className='ans-input';
-    fb.textContent='';
-    genMain();locked=false;inp.focus();
-  },1200);
+  setTimeout(function(){inp.value='';inp.className='ans-input';fb.textContent='';genMain();locked=false;inp.focus();},1200);
 }
 
 function triggerLaunch(){
   speak(V.launch);
   document.getElementById('launch-score-val').textContent=score;
   document.getElementById('launch-overlay').classList.add('show');
-  setTimeout(()=>{
-    const q=makeQ();ovAnswer=q.answer;
+  setTimeout(function(){
+    var q=makeQ();ovAns=q.answer;
     document.getElementById('launch-q').textContent=q.text;
-    const inp=document.getElementById('launch-input');
-    inp.value='';inp.className='ans-input';
+    var inp=document.getElementById('launch-input');inp.value='';inp.className='ans-input';
     document.getElementById('launch-fb').textContent='';
     document.getElementById('launch-card').classList.add('show');
-    setTimeout(()=>inp.focus(),80);
+    setTimeout(function(){inp.focus();},80);
   },2200);
 }
 
 function triggerGameOver(){
   speak(V.gameover);
   document.getElementById('final-score').textContent=score;
-  const q=makeQ();ovAnswer=q.answer;
+  var q=makeQ();ovAns=q.answer;
   document.getElementById('gameover-q').textContent=q.text;
-  const inp=document.getElementById('gameover-input');
-  inp.value='';inp.className='ans-input';
+  var inp=document.getElementById('gameover-input');inp.value='';inp.className='ans-input';
   document.getElementById('gameover-fb').textContent='';
   document.getElementById('gameover-overlay').classList.add('show');
-  setTimeout(()=>inp.focus(),80);
-}
-
-function activateSound() {
-  loadVoices(); // make sure voices are loaded
-  voiceEnabled = true;
-  const btn = document.getElementById('sound-btn');
-  btn.textContent = '🔊 קול';
-  btn.style.background = 'rgba(78,205,196,0.2)';
-  btn.style.borderColor = 'rgba(78,205,196,0.5)';
-  btn.style.color = '#4ecdc4';
-  btn.onclick = () => speak(V.intro);
-  speak(V.intro);
+  setTimeout(function(){inp.focus();},80);
 }
 
 function startGame(){
-  score=0;lives=3;streak=0;locked=false;ovAnswer=null;
+  score=0;lives=3;streak=0;locked=false;ovAns=null;
   setFuel(8);
   document.getElementById('score-display').textContent=0;
   document.getElementById('lives-display').textContent=3;
   document.getElementById('streak-display').textContent=0;
   document.getElementById('main-fb').textContent='';
-  const mi=document.getElementById('main-input');mi.value='';mi.className='ans-input';
+  var mi=document.getElementById('main-input');mi.value='';mi.className='ans-input';
   document.getElementById('launch-overlay').classList.remove('show');
   document.getElementById('launch-card').classList.remove('show');
   document.getElementById('gameover-overlay').classList.remove('show');
   genMain();
-  setTimeout(()=>mi.focus(),100);
+  setTimeout(function(){mi.focus();},100);
 }
 
-document.getElementById('main-input').addEventListener('keydown',e=>{if(e.key==='Enter')checkMain();});
+document.getElementById('main-input').addEventListener('keydown',function(e){if(e.key==='Enter')checkMain();});
 document.getElementById('main-btn').addEventListener('click',checkMain);
-
 startGame();
 </script>
 </body>
